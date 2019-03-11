@@ -15,4 +15,4 @@ script:
     - py.test -v 
 
 after_success:
-    - coveralls
+    #- coveralls
