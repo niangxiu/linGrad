@@ -11,12 +11,23 @@ and omits many desirable features.
 
 #### Libraries
 # Standard library
+from __future__ import division
 import random
+import sys
+import pdb
 
 # Third-party libraries
 import numpy as np
+from numpy.linalg import norm
+from itertools import izip
+from scipy.stats.mstats import gmean
+
+# parameters
+epsstar = 0.3
+record_file = open("record.txt", 'w')
 
 class Network(object):
+
 
     def __init__(self, sizes):
         """The list ``sizes`` contains the number of neurons in the
@@ -31,9 +42,15 @@ class Network(object):
         ever used in computing the outputs from later layers."""
         self.num_layers = len(sizes)
         self.sizes = sizes
+        self.eta = 1.0 # learning rate
+        self.etas = [self.eta] # history of learning rate
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
+        # self.biases = [np.zeros([y, 1]) for y in sizes[1:]]
+        # self.weights = [np.zeros([y, x])
+                        # for x, y in zip(sizes[:-1], sizes[1:])]
+
 
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
@@ -41,8 +58,8 @@ class Network(object):
             a = sigmoid(np.dot(w, a)+b)
         return a
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
-            test_data=None):
+
+    def SGD(self, training_data, epochs, mini_batch_size, test_data=None):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs and the desired
@@ -54,33 +71,51 @@ class Network(object):
         if test_data: n_test = len(test_data)
         n = len(training_data)
         for j in xrange(epochs):
-            random.shuffle(training_data)
+            # random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
                 for k in xrange(0, n, mini_batch_size)]
-            for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta)
+            for i, mini_batch in enumerate(mini_batches):
+                if i % 50 ==0:
+                    self.update_mini_batch(mini_batch, effectrange = True)
+                else:
+                    self.update_mini_batch(mini_batch)
             if test_data:
                 print "Epoch {0}: {1} / {2}".format(
                     j, self.evaluate(test_data), n_test)
             else:
                 print "Epoch {0} complete".format(j)
+        record_file.close()
 
-    def update_mini_batch(self, mini_batch, eta):
+
+    def update_mini_batch(self, mini_batch, effectrange=False):
         """Update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
-        The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
-        is the learning rate."""
+        The ``mini_batch`` is a list of tuples ``(x, y)``"""
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b-(eta/len(mini_batch))*nb
-                       for b, nb in zip(self.biases, nabla_b)]
+        # # update by un-nomalized sigmas
+        # delta_b = [-(self.eta/len(mini_batch))*nb for nb in nabla_b]
+        # delta_w = [-(self.eta/len(mini_batch))*nw for nw in nabla_w]
+        # update by nomalized sigmas
+        # pdb.set_trace()
+        length = sum([np.sqrt( np.sum(nb**2) + np.sum(nw**2) / (nb.size + nw.size) )
+                for nb, nw in zip(nabla_b, nabla_w)]) # length of gradients
+        delta_b = [-(self.eta/length)*nb for nb in nabla_b]
+        delta_w = [-(self.eta/length)*nw for nw in nabla_w]
+        # update eta by computing effective range
+        if effectrange:
+            self.update_eta(mini_batch, delta_b, delta_w)
+        # update weights and biases after update eta
+        # delta_b = [-(self.eta/len(mini_batch))*nb for nb in nabla_b]
+        # delta_w = [-(self.eta/len(mini_batch))*nw for nw in nabla_w]
+        self.biases  = [b+db for b, db in zip(self.biases,  delta_b)]
+        self.weights = [w+dw for w, dw in zip(self.weights, delta_w)]
+
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
@@ -103,12 +138,6 @@ class Network(object):
             sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
-        # Note that the variable l in the loop below is used a little
-        # differently to the notation in Chapter 2 of the book.  Here,
-        # l = 1 means the last layer of neurons, l = 2 is the
-        # second-last layer, and so on.  It's a renumbering of the
-        # scheme in the book, used here to take advantage of the fact
-        # that Python can use negative indices in lists.
         for l in xrange(2, self.num_layers):
             z = zs[-l]
             sp = sigmoid_prime(z)
@@ -116,6 +145,7 @@ class Network(object):
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
         return (nabla_b, nabla_w)
+
 
     def evaluate(self, test_data):
         """Return the number of test inputs for which the neural
@@ -126,16 +156,90 @@ class Network(object):
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
 
+
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
         return (output_activations-y)
+
+        
+    def finite_difference(self, base_acts, delta_b, delta_w):
+        """return the perturbation in the entire network. 
+        base_acts is the activations of the network with base parameters"""
+        # feedforward with perturbed parameters
+        weights = [w+dw for w, dw in zip(self.weights, delta_w)]
+        biases  = [b+db for b, db in zip(self.biases,  delta_b)]
+        activation = base_acts[0]
+        activations_p = [activation]
+        for b, w in zip(biases, weights):
+            z = np.dot(w, activation)+b
+            activation = sigmoid(z)
+            activations_p.append(activation)
+        return [ap-a for ap, a in zip(activations_p[1:], base_acts[1:])]
+
+
+    def linearized_perturb(self, base_acts, delta_b, delta_w):
+        """return the linearized perturbation in the entire network,
+        computed by tangent equations"""
+        da = np.zeros(base_acts[0].shape) 
+        das = [da]
+        for a, a_next, w, dw, db in izip(base_acts[:-1], base_acts[1:], self.weights, delta_w, delta_b):
+            sp = sigmoid_prime_a(a_next)
+            da = (np.dot(w,da) + np.dot(dw,a) + db) * sp 
+            das.append(da)
+        return das[1:]
+        
+    
+    def update_eta(self, mini_batch, delta_b, delta_w):
+        eps = 0
+        for x, y in mini_batch:
+            # feedforward base net
+            activation = x
+            base_acts = [x] # list to store all the activations, layer by layer
+            for b, w in zip(self.biases, self.weights):
+                z = np.dot(w, activation)+b
+                activation = sigmoid(z)
+                base_acts.append(activation)
+            # compute linear error
+            fds = self.finite_difference(base_acts, delta_b, delta_w)
+            lds = self.linearized_perturb(base_acts, delta_b, delta_w)
+            epsn = 0.0
+            for fd, ld in zip(fds, lds):
+                epsn += norm(fd-ld) / (norm(ld) + 1e-12) / len(fds)
+            eps += epsn
+        eps /= len(mini_batch)
+        # update self.eta
+        # if eps <= eps0:
+            # self.eta *= min(epsstar/eps, 10)
+            # # _ = min(self.eta*epsstar/eps, self.eta*10, 30.0)
+            # # self.eta = np.sqrt(self.eta * _)
+            # # self.eta *= min(epsstar/eps, 10.0)
+        # else:
+            # self.eta *= alpha
+        self.eta *= epsstar/eps
+        self.etas.append(self.eta)
+        if len(self.etas) >= 20:
+            self.eta = gmean(self.etas[-20:])
+        else:
+            self.eta = gmean(self.etas)
+        self.etas[-1] = self.eta
+        record_file.write('{:f} {:f}\n'.format(self.eta, eps))
+        record_file.flush()
+        return fds, lds, eps, self.eta
+
 
 #### Miscellaneous functions
 def sigmoid(z):
     """The sigmoid function."""
     return 1.0/(1.0+np.exp(-z))
 
+
 def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z)*(1-sigmoid(z))
+
+
+def sigmoid_prime_a(a):
+    """Derivative of the sigmoid function, using a instead of z"""
+    return a*(1-a)
+
