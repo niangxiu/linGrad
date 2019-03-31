@@ -18,7 +18,7 @@ for x in lines:
     eta_hist.append(float(x.split(' ')[0]))
     linerr_hist.append(float(x.split(' ')[1]))
 plt.figure(figsize=[16,12])
-plt.plot(np.log(eta_hist))
+plt.plot(eta_hist)
 plt.savefig('eta_hist.png')
 plt.close()
 f.close()

@@ -19,3 +19,5 @@ coverage.xml
 
 *.png
 record.txt
+/src/hist
+checkpoint.p

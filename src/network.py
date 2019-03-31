@@ -21,10 +21,12 @@ import numpy as np
 from numpy.linalg import norm
 from itertools import izip
 from scipy.stats.mstats import gmean
+import pickle
+
 
 # parameters
 epsstar = 0.3
-record_file = open("record.txt", 'w')
+nmb_tune_eta = 100 # try to adjust eta this many minibatches
 
 class Network(object):
 
@@ -43,13 +45,19 @@ class Network(object):
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.eta = 1.0 # learning rate
-        self.etas = [self.eta] # history of learning rate
+        self.etas = [] # history of learning rate
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
+        self.nepoch = 0
+        record_file = open("record.txt", 'w')
         # self.biases = [np.zeros([y, 1]) for y in sizes[1:]]
         # self.weights = [np.zeros([y, x])
                         # for x, y in zip(sizes[:-1], sizes[1:])]
+
+    def restart(self):
+        self = pickle.load(open( "checkpoint.p", "rb" )) 
+        record_file = open("record.txt", 'a')
 
 
     def feedforward(self, a):
@@ -71,20 +79,22 @@ class Network(object):
         if test_data: n_test = len(test_data)
         n = len(training_data)
         for j in xrange(epochs):
-            # random.shuffle(training_data)
+            self.nepoch += 1
+            random.shuffle(training_data)
             mini_batches = [
                 training_data[k:k+mini_batch_size]
                 for k in xrange(0, n, mini_batch_size)]
             for i, mini_batch in enumerate(mini_batches):
-                if i % 50 ==0:
+                if i % nmb_tune_eta == 0:
                     self.update_mini_batch(mini_batch, effectrange = True)
                 else:
                     self.update_mini_batch(mini_batch)
             if test_data:
                 print "Epoch {0}: {1} / {2}".format(
-                    j, self.evaluate(test_data), n_test)
+                    self.nepoch, self.evaluate(test_data), n_test)
             else:
                 print "Epoch {0} complete".format(j)
+        pickle.dump(self, open("checkpoint.p", "wb"))
         record_file.close()
 
 
@@ -98,21 +108,17 @@ class Network(object):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        # # update by un-nomalized sigmas
-        # delta_b = [-(self.eta/len(mini_batch))*nb for nb in nabla_b]
-        # delta_w = [-(self.eta/len(mini_batch))*nw for nw in nabla_w]
+        # update by un-nomalized sigmas
+        delta_b = [-(self.eta/len(mini_batch))*nb for nb in nabla_b]
+        delta_w = [-(self.eta/len(mini_batch))*nw for nw in nabla_w]
         # update by nomalized sigmas
-        # pdb.set_trace()
-        length = sum([np.sqrt( np.sum(nb**2) + np.sum(nw**2) / (nb.size + nw.size) )
-                for nb, nw in zip(nabla_b, nabla_w)]) # length of gradients
-        delta_b = [-(self.eta/length)*nb for nb in nabla_b]
-        delta_w = [-(self.eta/length)*nw for nw in nabla_w]
+        # length = sum([np.sqrt( np.sum(nb**2) + np.sum(nw**2) / (nb.size + nw.size) )
+                # for nb, nw in zip(nabla_b, nabla_w)]) # length of gradients
+        # delta_b = [-(self.eta/length)*nb for nb in nabla_b]
+        # delta_w = [-(self.eta/length)*nw for nw in nabla_w]
         # update eta by computing effective range
         if effectrange:
             self.update_eta(mini_batch, delta_b, delta_w)
-        # update weights and biases after update eta
-        # delta_b = [-(self.eta/len(mini_batch))*nb for nb in nabla_b]
-        # delta_w = [-(self.eta/len(mini_batch))*nw for nw in nabla_w]
         self.biases  = [b+db for b, db in zip(self.biases,  delta_b)]
         self.weights = [w+dw for w, dw in zip(self.weights, delta_w)]
 
@@ -209,20 +215,12 @@ class Network(object):
             eps += epsn
         eps /= len(mini_batch)
         # update self.eta
-        # if eps <= eps0:
-            # self.eta *= min(epsstar/eps, 10)
-            # # _ = min(self.eta*epsstar/eps, self.eta*10, 30.0)
-            # # self.eta = np.sqrt(self.eta * _)
-            # # self.eta *= min(epsstar/eps, 10.0)
-        # else:
-            # self.eta *= alpha
-        self.eta *= epsstar/eps
-        self.etas.append(self.eta)
-        if len(self.etas) >= 20:
-            self.eta = gmean(self.etas[-20:])
+        self.etas.append(self.eta * epsstar/eps)
+        nn = 50000 / nmb_tune_eta / len(mini_batch)
+        if len(self.etas) >= self.nn:
+            self.eta = min(self.etas[-self.nn:])
         else:
-            self.eta = gmean(self.etas)
-        self.etas[-1] = self.eta
+            self.eta = min(self.etas)
         record_file.write('{:f} {:f}\n'.format(self.eta, eps))
         record_file.flush()
         return fds, lds, eps, self.eta
