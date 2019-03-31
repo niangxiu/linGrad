@@ -15,6 +15,7 @@ from __future__ import division
 import random
 import sys
 import pdb
+import os.path
 
 # Third-party libraries
 import numpy as np
@@ -36,28 +37,31 @@ class Network(object):
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
         first layer containing 2 neurons, the second layer 3 neurons,
-        and the third layer 1 neuron.  The biases and weights for the
-        network are initialized randomly, using a Gaussian
-        distribution with mean 0, and variance 1.  Note that the first
-        layer is assumed to be an input layer, and by convention we
-        won't set any biases for those neurons, since biases are only
-        ever used in computing the outputs from later layers."""
-        self.num_layers = len(sizes)
-        self.sizes = sizes
-        self.eta = 1.0 # learning rate
-        self.etas = [] # history of learning rate
-        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x)
-                        for x, y in zip(sizes[:-1], sizes[1:])]
-        self.nepoch = 0
-        record_file = open("record.txt", 'w')
-        # self.biases = [np.zeros([y, 1]) for y in sizes[1:]]
-        # self.weights = [np.zeros([y, x])
-                        # for x, y in zip(sizes[:-1], sizes[1:])]
-
-    def restart(self):
-        self = pickle.load(open( "checkpoint.p", "rb" )) 
-        record_file = open("record.txt", 'a')
+        and the third layer 1 neuron. 
+        Automatically resume if the pickle file exists."""
+        global record_file
+        if os.path.exists('checkpoint.p'):
+            print('resume from checkpoint')
+            self.__dict__.clear()
+            self.__dict__.update(pickle.load(open( "checkpoint.p", "rb" )))
+            record_file = open("record.txt", 'a')
+            assert self.sizes == sizes
+        else:
+            print('no checkpoint found, fresh start')
+            self.nn = None # number of previous effective ranges to remember
+            self.num_layers = len(sizes)
+            self.sizes = sizes
+            self.eta = 1.0 # learning rate
+            self.etas = [] # history of learning rate
+            self.nepoch = 0
+            record_file = open("record.txt", 'w')
+            print('open record')
+            self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
+            self.weights = [np.random.randn(y, x)
+                            for x, y in zip(sizes[:-1], sizes[1:])]
+            # self.biases = [np.zeros([y, 1]) for y in sizes[1:]]
+            # self.weights = [np.zeros([y, x])
+                            # for x, y in zip(sizes[:-1], sizes[1:])]
 
 
     def feedforward(self, a):
@@ -71,13 +75,13 @@ class Network(object):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs and the desired
-        outputs.  The other non-optional parameters are
-        self-explanatory.  If ``test_data`` is provided then the
+        outputs.  If ``test_data`` is provided then the
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
         if test_data: n_test = len(test_data)
         n = len(training_data)
+        self.nn = int(round(n / nmb_tune_eta / mini_batch_size)) # number of previous effective ranges to remember
         for j in xrange(epochs):
             self.nepoch += 1
             random.shuffle(training_data)
@@ -94,7 +98,7 @@ class Network(object):
                     self.nepoch, self.evaluate(test_data), n_test)
             else:
                 print "Epoch {0} complete".format(j)
-        pickle.dump(self, open("checkpoint.p", "wb"))
+        pickle.dump(self.__dict__, open("checkpoint.p", "wb"))
         record_file.close()
 
 
@@ -216,7 +220,6 @@ class Network(object):
         eps /= len(mini_batch)
         # update self.eta
         self.etas.append(self.eta * epsstar/eps)
-        nn = 50000 / nmb_tune_eta / len(mini_batch)
         if len(self.etas) >= self.nn:
             self.eta = min(self.etas[-self.nn:])
         else:
