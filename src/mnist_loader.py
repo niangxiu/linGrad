@@ -12,6 +12,7 @@ function usually called by our neural network code.
 # Standard library
 import pickle as cPickle
 import gzip
+import os
 
 # Third-party libraries
 import numpy as np
@@ -39,7 +40,9 @@ def load_data():
     That's done in the wrapper function ``load_data_wrapper()``, see
     below.
     """
-    f = gzip.open('../data/mnist.pkl.gz', 'rb')
+    this_file_path = os.path.dirname(os.path.abspath(__file__))
+    f = gzip.open(os.path.join(this_file_path, '../data/mnist.pkl.gz'), 'rb')
+    # f = gzip.open('../data/mnist.pkl.gz', 'rb')
     training_data, validation_data, test_data = cPickle.load(f)
     f.close()
     return (training_data, validation_data, test_data)

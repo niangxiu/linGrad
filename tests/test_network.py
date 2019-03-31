@@ -2,11 +2,12 @@ from __future__ import division
 import numpy as np
 import sys, os
 import pytest
+import pdb
 
 my_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(my_path, '..'))
 from src.network import sigmoid, sigmoid_prime
-import src.network
+import src.network as network
 import src.mnist_loader
 
 
@@ -19,6 +20,7 @@ def test_fdld_1():
     net.biases = [1]
     net.weights = [np.array([1,1])]
     net.eta = 1
+    net.nn = 3
     mini_batch = [[np.array([1,1]),1], [np.array([1,1]),1]]
     delta_b = [0.1]
     delta_w = [np.array([0.1, 0.1])]
@@ -28,7 +30,7 @@ def test_fdld_1():
     b = sigmoid_prime(3) * 0.3
     assert np.abs(lds - b) <= 1e-9
     assert np.abs(eps - np.abs((a-b)/ b)) <= 1e-9
-    assert np.abs(eta**2 - src.network.epsstar / eps) <= 1e-9
+    assert np.abs(eta - src.network.epsstar / eps) <= 1e-9
 
 
 def test_fdld_2():
@@ -37,6 +39,7 @@ def test_fdld_2():
     net.biases = [1, 1]
     net.weights = [np.array([1]), np.array([1])]
     net.eta = 1
+    net.nn = 3
     mini_batch = [[np.array([1]),np.array([1])], [np.array([1]),np.array([1])]]
     delta_b = [0.1, 0.1]
     delta_w = [np.array([0.1]), np.array([0.1])]
@@ -49,5 +52,29 @@ def test_fdld_2():
     c /= 2
     print(c)
     assert np.abs(eps - c) <= 1e-9
-    assert np.abs(eta**2 - src.network.epsstar / eps) <= 1e-9
+    assert np.abs(eta - src.network.epsstar / eps) <= 1e-9
+
+
+def test_MNIST():
+    training_data, validation_data, test_data = src.mnist_loader.load_data_wrapper()
+    net = network.Network([784, 30, 10])
+    n_correct = net.SGD(training_data, 3, 10, test_data=test_data)
+    assert n_correct >= 9000
+    os.remove('checkpoint.p')
+    os.remove('record.txt')
+
+
+def test_restart():
+    training_data, validation_data, test_data = src.mnist_loader.load_data_wrapper()
+    net = network.Network([784, 30, 10])
+    net.SGD(training_data, 1, 10, test_data=test_data)
+    net2 =  network.Network([784, 30, 10])
+    assert np.all([np.all(net.__dict__[key] == net2.__dict__[key]) 
+        for key in net.__dict__.keys() if key != 'weights' and key!= 'biases'])
+    assert np.all([np.all(net.weights[i] == net2.weights[i]) 
+        for i in range(len(net.weights))])        
+    assert np.all([np.all(net.biases[i] == net2.biases[i]) 
+        for i in range(len(net.weights))])        
+    os.remove('checkpoint.p')
+    os.remove('record.txt')
 

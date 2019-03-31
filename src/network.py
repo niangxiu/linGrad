@@ -94,12 +94,15 @@ class Network(object):
                 else:
                     self.update_mini_batch(mini_batch)
             if test_data:
+                n_correct = self.evaluate(test_data)
                 print "Epoch {0}: {1} / {2}".format(
-                    self.nepoch, self.evaluate(test_data), n_test)
+                    self.nepoch, n_correct, n_test)
             else:
                 print "Epoch {0} complete".format(j)
-        pickle.dump(self.__dict__, open("checkpoint.p", "wb"))
+        with open("checkpoint.p", "wb") as checkpoint_file:
+            pickle.dump(self.__dict__, checkpoint_file)
         record_file.close()
+        return n_correct 
 
 
     def update_mini_batch(self, mini_batch, effectrange=False):
