@@ -12,7 +12,7 @@ install:
 
 script:
     #- py.test -v --cov=nilsas --cov=apps --cov-report term-missing
-    - py.test -v --cov=./ --cov-report term-missing
+    - py.test -v --cov=src --cov-report term-missing
 
 after_success:
-    #- coveralls
+    - coveralls
