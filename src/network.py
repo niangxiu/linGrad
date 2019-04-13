@@ -2,11 +2,8 @@
 network.py
 ~~~~~~~~~~
 
-A module to implement the stochastic gradient descent learning
-algorithm for a feedforward neural network.  Gradients are calculated
-using backpropagation.  Note that I have focused on making the code
-simple, easily readable, and easily modifiable.  It is not optimized,
-and omits many desirable features.
+A module to implement the stochastic gradient descent with learning
+rate given by effective range.
 """
 
 #### Libraries
@@ -14,7 +11,7 @@ and omits many desirable features.
 from __future__ import division
 import random
 import sys
-import pdb
+from pdb import set_trace
 import os.path
 
 # Third-party libraries
@@ -26,13 +23,13 @@ import pickle
 
 
 # parameters
-epsstar = 0.3
+epsstar = 0.1
 nmb_tune_eta = 100 # try to adjust eta this many minibatches
 
 class Network(object):
 
 
-    def __init__(self, sizes):
+    def __init__(self, sizes, generator=False):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -40,22 +37,23 @@ class Network(object):
         and the third layer 1 neuron. 
         Automatically resume if the pickle file exists."""
         global record_file
-        if os.path.exists('checkpoint.p'):
+        if os.path.exists('checkpoint.p') and not generator:
             print('resume from checkpoint')
             self.__dict__.clear()
             self.__dict__.update(pickle.load(open( "checkpoint.p", "rb" )))
             record_file = open("record.txt", 'a')
             assert self.sizes == sizes
         else:
-            print('no checkpoint found, fresh start')
+            if not generator:
+                print('no checkpoint found, fresh start')
+                record_file = open("record.txt", 'w')
+                print('open record.txt to write')
             self.nn = None # number of previous effective ranges to remember
             self.num_layers = len(sizes)
             self.sizes = sizes
             self.eta = 1.0 # learning rate
             self.etas = [] # history of learning rate
             self.nepoch = 0
-            record_file = open("record.txt", 'w')
-            print('open record')
             self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
             self.weights = [np.random.randn(y, x)
                             for x, y in zip(sizes[:-1], sizes[1:])]
@@ -71,15 +69,16 @@ class Network(object):
         return a
 
 
-    def SGD(self, training_data, epochs, mini_batch_size, test_data=None):
+    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs and the desired
         outputs.  If ``test_data`` is provided then the
         network will be evaluated against the test data after each
-        epoch, and partial progress printed out.  This is useful for
-        tracking progress, but slows things down substantially."""
+        epoch, and partial progress printed out.
+        if provided const_eta then we use constant learning rate"""
         if test_data: n_test = len(test_data)
+        if const_eta is not None: self.eta = const_eta
         n = len(training_data)
         self.nn = int(round(n / nmb_tune_eta / mini_batch_size)) # number of previous effective ranges to remember
         for j in xrange(epochs):
@@ -89,20 +88,24 @@ class Network(object):
                 training_data[k:k+mini_batch_size]
                 for k in xrange(0, n, mini_batch_size)]
             for i, mini_batch in enumerate(mini_batches):
-                if i % nmb_tune_eta == 0:
+                if i % nmb_tune_eta == 0 and const_eta is None:
                     self.update_mini_batch(mini_batch, effectrange = True)
                 else:
                     self.update_mini_batch(mini_batch)
             if test_data:
-                n_correct = self.evaluate(test_data)
-                print "Epoch {0}: {1} / {2}".format(
-                    self.nepoch, n_correct, n_test)
+                if case == 'MNIST':
+                    n_correct = self.evaluate_MNIST(test_data)
+                    print "Epoch {0}: {1} / {2}".format(
+                        self.nepoch, n_correct, n_test)
+                if case == 'DIST':
+                    dist = self.evaluate_DIST(test_data)
+                    print "Epoch {0}: distance {1}".format(
+                        self.nepoch, dist)
             else:
                 print "Epoch {0} complete".format(j)
         with open("checkpoint.p", "wb") as checkpoint_file:
             pickle.dump(self.__dict__, checkpoint_file)
         record_file.close()
-        return n_correct 
 
 
     def update_mini_batch(self, mini_batch, effectrange=False):
@@ -118,11 +121,6 @@ class Network(object):
         # update by un-nomalized sigmas
         delta_b = [-(self.eta/len(mini_batch))*nb for nb in nabla_b]
         delta_w = [-(self.eta/len(mini_batch))*nw for nw in nabla_w]
-        # update by nomalized sigmas
-        # length = sum([np.sqrt( np.sum(nb**2) + np.sum(nw**2) / (nb.size + nw.size) )
-                # for nb, nw in zip(nabla_b, nabla_w)]) # length of gradients
-        # delta_b = [-(self.eta/length)*nb for nb in nabla_b]
-        # delta_w = [-(self.eta/length)*nw for nw in nabla_w]
         # update eta by computing effective range
         if effectrange:
             self.update_eta(mini_batch, delta_b, delta_w)
@@ -160,7 +158,7 @@ class Network(object):
         return (nabla_b, nabla_w)
 
 
-    def evaluate(self, test_data):
+    def evaluate_MNIST(self, test_data):
         """Return the number of test inputs for which the neural
         network outputs the correct result. Note that the neural
         network's output is assumed to be the index of whichever
@@ -168,6 +166,14 @@ class Network(object):
         test_results = [(np.argmax(self.feedforward(x)), y)
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
+
+
+    def evaluate_DIST(self, test_data):
+        """Return the summationof the distances between the output
+        data and the output activations."""
+        test_results = [(self.feedforward(x), y)
+                        for (x, y) in test_data]
+        return np.mean([np.linalg.norm(x-y)/np.linalg.norm(y) for (x, y) in test_results])
 
 
     def cost_derivative(self, output_activations, y):
@@ -219,8 +225,9 @@ class Network(object):
             epsn = 0.0
             for fd, ld in zip(fds, lds):
                 epsn += norm(fd-ld) / (norm(ld) + 1e-12) / len(fds)
-            eps += epsn
-        eps /= len(mini_batch)
+            eps = max(eps, epsn)
+            # eps += epsn
+        # eps /= len(mini_batch)
         # update self.eta
         self.etas.append(self.eta * epsstar/eps)
         if len(self.etas) >= self.nn:

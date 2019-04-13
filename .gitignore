@@ -21,3 +21,4 @@ coverage.xml
 record.txt
 /src/hist
 checkpoint.p
+data.p
