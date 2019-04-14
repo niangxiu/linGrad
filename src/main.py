@@ -13,5 +13,5 @@ net_sizes = [50, 50, 50, 50]
 data_sizes = [50000, 1, 10000]
 training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
 net = network.Network(net_sizes)
-net.SGD(training_data, epochs=50, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=None)
-# net.SGD(training_data, epochs=30, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=0.1)
+# net.SGD(training_data, epochs=50, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=None)
+net.SGD(training_data, epochs=50, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=1)

@@ -173,7 +173,7 @@ class Network(object):
         data and the output activations."""
         test_results = [(self.feedforward(x), y)
                         for (x, y) in test_data]
-        return np.mean([np.linalg.norm(x-y)/np.linalg.norm(y) for (x, y) in test_results])
+        return np.mean([np.linalg.norm(x-y)/np.sqrt(len(y)) for (x, y) in test_results])
 
 
     def cost_derivative(self, output_activations, y):
