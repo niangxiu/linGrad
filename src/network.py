@@ -22,14 +22,15 @@ from scipy.stats.mstats import gmean
 import pickle
 
 
+
+
 # parameters
-epsstar = 0.1
 nmb_tune_eta = 100 # try to adjust eta this many minibatches
 
 class Network(object):
 
 
-    def __init__(self, sizes, generator=False):
+    def __init__(self, sizes, generator=False, epsstar=0.1):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -48,6 +49,7 @@ class Network(object):
                 print('no checkpoint found, fresh start')
                 record_file = open("record.txt", 'w')
                 print('open record.txt to write')
+            self.epsstar = epsstar
             self.nn = None # number of previous effective ranges to remember
             self.num_layers = len(sizes)
             self.sizes = sizes
@@ -57,9 +59,6 @@ class Network(object):
             self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
             self.weights = [np.random.randn(y, x)
                             for x, y in zip(sizes[:-1], sizes[1:])]
-            # self.biases = [np.zeros([y, 1]) for y in sizes[1:]]
-            # self.weights = [np.zeros([y, x])
-                            # for x, y in zip(sizes[:-1], sizes[1:])]
 
 
     def feedforward(self, a):
@@ -81,6 +80,17 @@ class Network(object):
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
         self.nn = int(round(n / nmb_tune_eta / mini_batch_size)) # number of previous effective ranges to remember
+
+        results = []
+        if case == 'MNIST':
+            n_correct = self.evaluate_MNIST(test_data)
+            print "Epoch 0: {} / {}".format(n_correct, n_test)
+            results.append(n_correct)
+        if case == 'DIST':
+            dist = self.evaluate_DIST(test_data)
+            print "Epoch 0: distance {}".format(dist)
+            results.append(dist)
+        
         for j in xrange(epochs):
             self.nepoch += 1
             random.shuffle(training_data)
@@ -97,15 +107,18 @@ class Network(object):
                     n_correct = self.evaluate_MNIST(test_data)
                     print "Epoch {0}: {1} / {2}".format(
                         self.nepoch, n_correct, n_test)
+                    results.append(n_correct)
                 if case == 'DIST':
                     dist = self.evaluate_DIST(test_data)
                     print "Epoch {0}: distance {1}".format(
                         self.nepoch, dist)
+                    results.append(dist)
             else:
                 print "Epoch {0} complete".format(j)
         with open("checkpoint.p", "wb") as checkpoint_file:
             pickle.dump(self.__dict__, checkpoint_file)
         record_file.close()
+        return results
 
 
     def update_mini_batch(self, mini_batch, effectrange=False):
@@ -226,10 +239,8 @@ class Network(object):
             for fd, ld in zip(fds, lds):
                 epsn += norm(fd-ld) / (norm(ld) + 1e-12) / len(fds)
             eps = max(eps, epsn)
-            # eps += epsn
-        # eps /= len(mini_batch)
         # update self.eta
-        self.etas.append(self.eta * epsstar/eps)
+        self.etas.append(self.eta * self.epsstar/eps)
         if len(self.etas) >= self.nn:
             self.eta = min(self.etas[-self.nn:])
         else:
