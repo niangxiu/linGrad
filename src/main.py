@@ -6,42 +6,55 @@ import os
 import numpy as np
 import pickle
 from pdb import set_trace
+import time
 
 
-# training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
-# net = network.Network([784, 30, 10])
-# net.SGD(training_data, 8, 10, test_data=test_data)
+# # MNIST basic run
+# training_data, test_data = mnist_loader.load_data_wrapper(validation = False)
+# net = network.Network([784, 30, 10], generator=False, epsstar=0.3)
+# net.SGD(training_data, epochs=800, mini_batch_size=10, 
+        # test_data=test_data, case='MNIST', const_eta=None)
 
 
+
+
+# DIST basic run
 # net_sizes = [50, 50, 50, 50]
 # data_sizes = [50000, 1, 10000]
 # training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
-# net = network.Network(net_sizes)
-# # net.SGD(training_data, epochs=50, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=None)
-# net.SGD(training_data, epochs=50, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=1)
+# net = network.Network(net_sizes, generator=False, epsstar=1.0)
+# net.SGD(training_data, epochs=50, mini_batch_size=2, test_data=test_data, case='DIST', const_eta=None)
 
 
-data_sizes = [50000, 1, 10000]
+# DIST all run
 net_sizes = [50, 50, 50, 50]
+data_sizes = [128*400, 1, 10000]
 training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
-
-etas = [None, None, 0.1, 1, 10]
-epsstars = [0.1, 0.3, None, None, None]
-nsamples = 10
-nepoch = 200
+etas = [None, None, None, None, None, 0.1, 1, 10, 100]
+epsstars = [0.05, 0.1, 0.3, 0.5, 0.8, None, None, None, None]
+mbs = [128, 128, 128, 128, 128, 128, 128, 128, 128]
+# etas = [None, None, None, None, None, None, None, None]
+# epsstars = [0.1, 0.3, 0.5, 0.8, 0.1, 0.3, 0.5, 0.8]
+# mbs = [2, 2, 2, 2, 50, 50, 50, 50]
+nruns = 5
+nepoch = 50
 all_hist = []
 
-for eta, epsstar in zip(etas, epsstars):
-    print('eta=', eta, ' eps*=', epsstar)
+for eta, epsstar, mb in zip(etas, epsstars, mbs):
+    print('eta=', eta, ' eps*=', epsstar, 'minibatch_size=', mb)
     results = []
-    for i in range(nsamples):
+    for i in range(nruns):
+        time.sleep(1)
         try:
             os.remove('checkpoint.p')
+        except:
+            print("Error while deleting checkpoint")
+        try:
             os.remove('record.txt')
         except:
-            print("Error while deleting file")
+            print("Error while deleting record file")
         net = network.Network(net_sizes, generator=False, epsstar=epsstar)
-        _ = net.SGD(training_data, epochs=nepoch, mini_batch_size=10, test_data=test_data, case='DIST', const_eta=eta)
+        _ = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta)
         results.append(_)
     results = np.array(results)
     all_hist.append(results.mean(axis=0))
@@ -49,4 +62,3 @@ for eta, epsstar in zip(etas, epsstars):
 all_hist = np.array(all_hist)
 with open("all_history.p", "wb") as f:
     pickle.dump(all_hist, f)
-    
