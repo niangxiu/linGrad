@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/niangxiu/erGrad.svg?token=erfxBbTkg8zJBBBsar2A&branch=master)](https://travis-ci.org/niangxiu/erGrad)
+[![Build Status](https://travis-ci.org/niangxiu/linGrad.svg?token=erfxBbTkg8zJBBBsar2A&branch=master)](https://travis-ci.org/niangxiu/linGrad)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
 
