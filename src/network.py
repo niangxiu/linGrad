@@ -24,8 +24,8 @@ from pdb import set_trace
 
 
 # parameters
-# Nlin = 100 # try to adjust eta this many minibatches
-Nlin = 1 # try to adjust eta this many minibatches
+Nlin = 100 # try to adjust eta this many minibatches
+# Nlin = 1 # try to adjust eta this many minibatches
 
 
 class Network(object):
@@ -52,8 +52,8 @@ class Network(object):
                 record_file = open("record.txt", 'w')
                 print('open record.txt to write')
             self.epsstar = epsstar
-            # self.Nhist = None # number of previous effective ranges to remember
-            self.Nhist = 50 # number of previous effective ranges to remember
+            self.Nhist = None # number of previous effective ranges to remember
+            # self.Nhist = 50 # default, update in SGD
             self.num_layers = len(sizes)
             self.sizes = sizes
             self.eta = 1 # learning rate 
@@ -79,7 +79,7 @@ class Network(object):
         if test_data: n_test = len(test_data)
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
-        # self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
+        self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
         
         results = []
         if case == 'MNIST':

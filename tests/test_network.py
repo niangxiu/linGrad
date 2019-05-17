@@ -24,13 +24,14 @@ def test_fdld_1():
     mini_batch = [[np.array([1,1]),1], [np.array([1,1]),1]]
     delta_b = [0.1]
     delta_w = [np.array([0.1, 0.1])]
+    net.Nhist = 50
     fds, lds, eps, eta = net.update_eta(mini_batch, delta_b, delta_w)
     a = sigmoid(3.3) - sigmoid(3)
     assert np.abs(fds - a) <= 1e-9
     b = sigmoid_prime(3) * 0.3
     assert np.abs(lds - b) <= 1e-9
     assert np.abs(eps - np.abs((a-b)/ b)) <= 1e-9
-    assert np.abs(eta - src.network.epsstar / eps) <= 1e-9
+    assert np.abs(eta - net.epsstar / eps) <= 1e-9
 
 
 def test_fdld_2():
@@ -43,6 +44,7 @@ def test_fdld_2():
     mini_batch = [[np.array([1]),np.array([1])], [np.array([1]),np.array([1])]]
     delta_b = [0.1, 0.1]
     delta_w = [np.array([0.1]), np.array([0.1])]
+    net.Nhist = 50
     fds, lds, eps, eta = net.update_eta(mini_batch, delta_b, delta_w)
     a = np.array([sigmoid(2.2) - sigmoid(2) ,sigmoid(1.1*sigmoid(2.2)+1.1) - sigmoid(sigmoid(2)+1)])
     assert np.all(np.abs(fds - a) <= 1e-9)
@@ -52,16 +54,25 @@ def test_fdld_2():
     c /= 2
     print(c)
     assert np.abs(eps - c) <= 1e-9
-    assert np.abs(eta - src.network.epsstar / eps) <= 1e-9
+    assert np.abs(eta - net.epsstar / eps) <= 1e-9
 
 
 def test_MNIST():
     training_data, validation_data, test_data = src.mnist_loader.load_data_wrapper()
-    net = network.Network([784, 30, 10])
-    n_correct = net.SGD(training_data, 3, 10, test_data=test_data)
-    assert n_correct >= 9000
-    os.remove('checkpoint.p')
-    os.remove('record.txt')
+    net = network.Network([784, 30, 10], generator=False, epsstar=0.3)
+    wrong_percentage = net.SGD(training_data, epochs=3, mini_batch_size=10, 
+                        test_data=test_data, case='MNIST', const_eta=None)
+    assert len(wrong_percentage) == 4
+    assert wrong_percentage[-1] <= 0.2
+    try:
+        os.remove('checkpoint.p')
+    except:
+        print("Error while deleting checkpoint")
+    try:
+        os.remove('record.txt')
+    except:
+        print("Error while deleting record file")
+    
 
 
 def test_restart():
@@ -75,6 +86,11 @@ def test_restart():
         for i in range(len(net.weights))])        
     assert np.all([np.all(net.biases[i] == net2.biases[i]) 
         for i in range(len(net.weights))])        
-    os.remove('checkpoint.p')
-    os.remove('record.txt')
-
+    try:
+        os.remove('checkpoint.p')
+    except:
+        print("Error while deleting checkpoint")
+    try:
+        os.remove('record.txt')
+    except:
+        print("Error while deleting record file")
