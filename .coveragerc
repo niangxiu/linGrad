@@ -1,0 +1,5 @@
+[run]
+omit =
+    src/main.py
+    src/data_generator.py
+    src/plot.py
