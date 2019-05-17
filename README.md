@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/niangxiu/linGrad.svg?branch=master)](https://travis-ci.org/niangxiu/linGrad)
+[![Coverage Status](https://coveralls.io/repos/github/niangxiu/linGrad/badge.svg)](https://coveralls.io/github/niangxiu/linGrad)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
 
