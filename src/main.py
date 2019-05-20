@@ -8,6 +8,7 @@ import pickle
 from pdb import set_trace
 import time
 
+#test brach git
 
 # # MNIST basic run
 # training_data, test_data = mnist_loader.load_data_wrapper(validation = False)
