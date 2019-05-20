@@ -19,7 +19,8 @@ coverage.xml
 
 *.png
 record.txt
-/src/hist
+/src/hist/*
+/src/hist_eps_obj/*
 checkpoint.p
 data.p
 all_history.p
