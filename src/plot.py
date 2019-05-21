@@ -52,7 +52,7 @@ plt.rc('font', family='sans-serif')
 
 
 # plot history of error for different eta and eps* for DIST/MNIST
-styles = ['y-', 'b-', 'r-', 'g-', 'k-','b:','r:', 'g:', 'k:']  # for mbsize 10
+styles = ['b-', 'r-', 'g-', 'k-','b:','r:', 'g:', 'k:']  # for mbsize 10
 # styles = ['b-', 'r-', 'g-', 'k-','b:','r:','g:','k:']
 with open("all_history.p", "rb") as f:
     all_hist = pickle.load(f)
@@ -65,7 +65,7 @@ for y, s in zip(all_hist, styles):
 plt.grid
 plt.xlabel('epochs')
 plt.ylabel('objective')
-plt.legend(('$\epsilon^*=0.05$', '$\epsilon^*=0.1$', '$\epsilon^*=0.3$', '$\epsilon^*=0.5$',
+plt.legend(('$\epsilon^*=0.1$', '$\epsilon^*=0.3$', '$\epsilon^*=0.5$',
             '$\epsilon^*=0.8$', '$\psi=0.1$', '$\psi=1$', '$\psi=10$', '$\psi=100$'),
             loc='upper right')
 # plt.legend(('$N_s=2$, $\epsilon^*=0.1$', 
