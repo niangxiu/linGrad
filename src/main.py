@@ -27,17 +27,18 @@ import time
 # DIST all run
 net_sizes = [50, 50, 50, 50]
 data_sizes = [50000, 1, 10000]
-# data_sizes = [128*400, 1, 10000]
 training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
 
 # MNIST all run
 # net_sizes = [784, 30, 10]
 # training_data, test_data = mnist_loader.load_data_wrapper(validation = False)
 
-etas = [None, None, None, None, None, 0.1, 1, 10, 100]
-epsstars = [0.05, 0.1, 0.3, 0.5, 0.8, None, None, None, None]
-mbs = [10, 10, 10, 10, 10, 10, 10, 10, 10]
-# mbs = [128, 128, 128, 128, 128, 128, 128, 128, 128]
+# etas = [None, None, None, None, None, 0.1, 1, 10, 100]
+# epsstars = [0.05, 0.1, 0.3, 0.5, 0.8, None, None, None, None]
+# mbs = [10, 10, 10, 10, 10, 10, 10, 10, 10]
+etas = [None, None, None, None]
+epsstars = [0.1, 0.3, 0.5, 0.8]
+mbs = [50, 50, 50, 50]
 # etas = [None, None, None, None, None, None, None, None]
 # epsstars = [0.1, 0.3, 0.5, 0.8, 0.1, 0.3, 0.5, 0.8]
 # mbs = [2, 2, 2, 2, 50, 50, 50, 50]
