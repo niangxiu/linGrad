@@ -24,7 +24,7 @@ from pdb import set_trace
 
 
 # parameters
-Nlin = 100 # try to adjust eta this many minibatches
+Nlin = 10 # try to adjust eta this many minibatches
 # Nlin = 1 # try to adjust eta this many minibatches
 
 
