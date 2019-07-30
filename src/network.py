@@ -56,7 +56,7 @@ class Network(object):
             # self.Nhist = 50 # default, update in SGD
             self.num_layers = len(sizes)
             self.sizes = sizes
-            self.eta = 0.01 # learning rate 
+            self.eta = 3.0 # learning rate 
             self.etas = [] # history of learning rate
             self.nepoch = 0
             self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
@@ -71,7 +71,7 @@ class Network(object):
         return a
 
 
-    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None):
+    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None, target=1.5):
         """Train the neural network using mini-batch stochastic gradient descent.  
         N_s = mini_batch_size
         If provided const_eta then we use constant learning rate, if None then do linGrad.
@@ -115,6 +115,13 @@ class Network(object):
                     results.append(dist)
             else:
                 print "Epoch {0} complete".format(j)
+
+            if target:
+                if results[-1] <= target:
+                    return j
+        if target:
+            return j
+        
         with open("checkpoint.p", "wb") as checkpoint_file:
             pickle.dump(self.__dict__, checkpoint_file)
         record_file.close()
