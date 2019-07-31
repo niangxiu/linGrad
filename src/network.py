@@ -56,7 +56,7 @@ class Network(object):
             # self.Nhist = 50 # default, update in SGD
             self.num_layers = len(sizes)
             self.sizes = sizes
-            self.eta = 1000 # learning rate 
+            self.eta = 1.0 # learning rate 
             self.etas = [] # history of learning rate
             self.nepoch = 0
             self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
@@ -80,7 +80,7 @@ class Network(object):
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
         # self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
-        self.Nhist = 3
+        self.Nhist = 1
         
         results = []
         if case == 'MNIST':
@@ -236,7 +236,7 @@ class Network(object):
         fdJ /= len(mini_batch)
         ldJ = [np.sum(db*nb)+np.sum(dw*nw) for db, dw, nb, nw in zip(delta_b, delta_w, nabla_b, nabla_w)]
         ldJ = np.sum(ldJ)
-        eps = np.abs(fdJ-ldJ) / np.abs(ldJ)
+        eps = np.abs(fdJ-ldJ) / (np.abs(ldJ) + 1e-12)
         # eps = np.abs(fdJ-ldJ) / min(np.abs(ldJ), np.abs(fdJ))
 
         # update self.eta
