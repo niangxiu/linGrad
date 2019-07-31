@@ -249,7 +249,7 @@ class Network(object):
             for fd, ld, i in zip(fds, lds, range(len(fds))):
                 # epsn += norm(fd-ld) / (norm(fd) + 1e-12) / len(fds)
                 # epsn += norm(fd-ld) / norm(fd) / len(fds)
-                epsn += norm(fd-ld) / min(norm(fd), norm(ld)) / len(fds)
+                epsn += norm(fd-ld) / (min(norm(fd), norm(ld)) + 1e-12) /  len(fds)
                 # if self.nepoch == 4 and i == len(fds) - 1:
                     # set_trace()
             eps += epsn / len(mini_batch)
