@@ -18,12 +18,12 @@ training_data, validation_data, test_data = data_generator.load_data(net_sizes,d
 # # net_sizes = [784, 30, 10]
 # # training_data, test_data = mnist_loader.load_data_wrapper(validation = False)
 
-etas = [None, None, None, None,     None, None, None]
-epsstars = [0.1, 0.15, 0.2, 0.3,    0.45, 0.67, 1.0]
-mbs = [10, 10, 10, 10,              10, 10, 10]
-# etas =      [None, None, None,  None, None,  None, None]
-# epsstars =  [0.67, 0.67, 0.67,     0.67, 0.67, 0.67, 0.67]
-# mbs =       [1, 2, 5,           10, 20, 50, 100]
+# etas = [None, None, None, None,     None, None, None]
+# epsstars = [0.1, 0.15, 0.2, 0.3,    0.45, 0.67, 1.0]
+# mbs = [10, 10, 10, 10,              10, 10, 10]
+etas =      [None, None,  None, None,  None]
+epsstars =  [0.67, 0.67,     0.67, 0.67, 0.67]
+mbs =       [2, 5,           10, 20, 50]
 # etas =      [None,]
 # epsstars =  [0.1,]
 # mbs =       [10,]
@@ -46,8 +46,8 @@ for eta, epsstar, mb in zip(etas, epsstars, mbs):
         except:
             print("Error while deleting record file")
         net = network.Network(net_sizes, generator=False, epsstar=epsstar)
-        # j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta, target=0.1)
-        j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta)
+        j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta, target=0.1)
+        # j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta)
         # _ = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='MNIST', const_eta=eta)
         results.append(j)
     results = np.array(results)
