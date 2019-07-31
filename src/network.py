@@ -79,8 +79,8 @@ class Network(object):
         if test_data: n_test = len(test_data)
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
-        # self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
-        self.Nhist = 1
+        self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
+        # self.Nhist = 1
         
         results = []
         if case == 'MNIST':
@@ -247,11 +247,8 @@ class Network(object):
             lds = self.linearized_perturb(base_acts, delta_b, delta_w)
             epsn = 0.0
             for fd, ld, i in zip(fds, lds, range(len(fds))):
-                # epsn += norm(fd-ld) / (norm(fd) + 1e-12) / len(fds)
-                # epsn += norm(fd-ld) / norm(fd) / len(fds)
-                epsn += norm(fd-ld) / (min(norm(fd), norm(ld)) + 1e-12) /  len(fds)
-                # if self.nepoch == 4 and i == len(fds) - 1:
-                    # set_trace()
+                epsn += norm(fd-ld) / (norm(ld) + 1e-12) / len(fds)
+                # epsn += norm(fd-ld) / (min(norm(fd), norm(ld)) + 1e-12) /  len(fds)
             eps += epsn / len(mini_batch)
 
         # update self.eta
