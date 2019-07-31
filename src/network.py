@@ -236,8 +236,8 @@ class Network(object):
         fdJ /= len(mini_batch)
         ldJ = [np.sum(db*nb)+np.sum(dw*nw) for db, dw, nb, nw in zip(delta_b, delta_w, nabla_b, nabla_w)]
         ldJ = np.sum(ldJ)
-        eps = np.abs(fdJ-ldJ) / (np.abs(ldJ) + 1e-12)
-        # eps = np.abs(fdJ-ldJ) / min(np.abs(ldJ), np.abs(fdJ))
+        # eps = np.abs(fdJ-ldJ) / (np.abs(ldJ) + 1e-12)
+        eps = np.abs(fdJ-ldJ) / (min(np.abs(ldJ), np.abs(fdJ)) + 1e-12)
 
         # update self.eta
         self.etas.append(self.eta * self.epsstar/eps)
