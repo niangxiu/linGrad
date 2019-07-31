@@ -80,7 +80,7 @@ class Network(object):
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
         # self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
-        self.Nhist = 3
+        self.Nhist = 1
         
         results = []
         if case == 'MNIST':
