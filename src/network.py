@@ -56,7 +56,7 @@ class Network(object):
             # self.Nhist = 50 # default, update in SGD
             self.num_layers = len(sizes)
             self.sizes = sizes
-            self.eta = 3.0 # learning rate 
+            self.eta = 1.0 # initial learning rate 
             self.etas = [] # history of learning rate
             self.nepoch = 0
             self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
@@ -71,7 +71,7 @@ class Network(object):
         return a
 
 
-    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None, target=1.5):
+    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None, target=None):
         """Train the neural network using mini-batch stochastic gradient descent.  
         N_s = mini_batch_size
         If provided const_eta then we use constant learning rate, if None then do linGrad.
@@ -79,7 +79,8 @@ class Network(object):
         if test_data: n_test = len(test_data)
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
-        self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
+        # self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
+        self.Nhist = 3
         
         results = []
         if case == 'MNIST':
@@ -245,8 +246,12 @@ class Network(object):
             fds = self.finite_difference(base_acts, delta_b, delta_w)
             lds = self.linearized_perturb(base_acts, delta_b, delta_w)
             epsn = 0.0
-            for fd, ld in zip(fds, lds):
-                epsn += norm(fd-ld) / (norm(ld) + 1e-12) / len(fds)
+            for fd, ld, i in zip(fds, lds, range(len(fds))):
+                # epsn += norm(fd-ld) / (norm(fd) + 1e-12) / len(fds)
+                # epsn += norm(fd-ld) / norm(fd) / len(fds)
+                epsn += norm(fd-ld) / min(norm(fd), norm(ld)) / len(fds)
+                # if self.nepoch == 4 and i == len(fds) - 1:
+                    # set_trace()
             eps += epsn / len(mini_batch)
 
         # update self.eta
