@@ -53,24 +53,28 @@ plt.rc('font', family='sans-serif')
 
 # plot history of error for different eta and eps* for DIST/MNIST
 # styles = ['y-', 'b-', 'r-', 'g-', 'k-','b:','r:', 'g:', 'k:']
-styles = ['b-', 'r-', 'g-', 'k-']
+# styles = ['b-', 'r-', 'g-', 'k-']
 # styles = ['b-', 'r-', 'g-', 'k-','b:','r:','g:','k:']
 with open("all_history.p", "rb") as f:
     all_hist = pickle.load(f)
-    assert len(all_hist) == len(styles)
+    # assert len(all_hist) == len(styles)
 
 plt.figure(figsize=(8,6))
-for y, s in zip(all_hist, styles):
-    plt.plot(y, s)
-# plt.ylim(top=0.2, bottom=0.03)
+# for y, s in zip(all_hist, styles):
+    # plt.plot(y, s)
+for y in all_hist:
+    plt.plot(y)
 plt.grid
 plt.xlabel('epochs')
 plt.ylabel('objective')
 # plt.legend(('$\epsilon^*=0.05$', '$\epsilon^*=0.1$', '$\epsilon^*=0.3$', '$\epsilon^*=0.5$',
             # '$\epsilon^*=0.8$', '$\psi=0.1$', '$\psi=1$', '$\psi=10$', '$\psi=100$'),
             # loc='upper right')
-plt.legend(('$\epsilon^*=0.1$', '$\epsilon^*=0.3$', '$\epsilon^*=0.5$', '$\epsilon^*=0.8$'),
-            loc='upper right')
+plt.legend((
+    '$\epsilon^*=0.1$', '$\epsilon^*=0.2$', '$\epsilon^*=0.3$', '$\epsilon^*=0.4$',
+    '$\epsilon^*=0.5$', '$\epsilon^*=0.6$', '$\epsilon^*=0.7$', '$\epsilon^*=0.8$',
+    '$\epsilon^*=0.9$', '$\epsilon^*=1.0$' 
+    ), loc='upper right')
 # plt.legend(('$N_s=2$, $\epsilon^*=0.1$', 
             # '$N_s=2$, $\epsilon^*=0.3$', 
             # '$N_s=2$, $\epsilon^*=0.5$', 

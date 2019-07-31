@@ -56,7 +56,7 @@ class Network(object):
             # self.Nhist = 50 # default, update in SGD
             self.num_layers = len(sizes)
             self.sizes = sizes
-            self.eta = 0.001 # learning rate 
+            self.eta = 3.0 # learning rate 
             self.etas = [] # history of learning rate
             self.nepoch = 0
             self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
@@ -71,7 +71,7 @@ class Network(object):
         return a
 
 
-    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None):
+    def SGD(self, training_data, epochs, mini_batch_size, test_data=None, case='MNIST', const_eta=None, target=None):
         """Train the neural network using mini-batch stochastic gradient descent.  
         N_s = mini_batch_size
         If provided const_eta then we use constant learning rate, if None then do linGrad.
@@ -79,7 +79,8 @@ class Network(object):
         if test_data: n_test = len(test_data)
         if const_eta is not None: self.eta = const_eta
         n = len(training_data)
-        self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
+        # self.Nhist = max(50, int(round(n / Nlin / mini_batch_size)) ) # number of previous effective ranges to remember
+        self.Nhist = 4
         
         results = []
         if case == 'MNIST':
@@ -115,6 +116,13 @@ class Network(object):
                     results.append(dist)
             else:
                 print "Epoch {0} complete".format(j)
+
+            if target:
+                if results[-1] <= target:
+                    return j
+        if target:
+            return j
+        
         with open("checkpoint.p", "wb") as checkpoint_file:
             pickle.dump(self.__dict__, checkpoint_file)
         record_file.close()
@@ -196,10 +204,9 @@ class Network(object):
         return (output_activations-y)
 
         
-    def finite_difference(self, base_acts, delta_b, delta_w, y, entire_trajec=True):
-        """return the perturbation in the entire network. 
-        base_acts is the activations of the network with base parameters
-        entire_trajec: whether use nonlinear measurement of entire trajec or only objec"""
+    def finite_difference(self, base_acts, delta_b, delta_w, y):
+        """return the perturbation in only the objective. 
+        base_acts is the activations of the network with base parameters """
         # feedforward with perturbed parameters
         weights = [w+dw for w, dw in zip(self.weights, delta_w)]
         biases  = [b+db for b, db in zip(self.biases,  delta_b)]
@@ -209,24 +216,9 @@ class Network(object):
             z = np.dot(w, activation)+b
             activation = sigmoid(z)
             activations_p.append(activation)
-        if entire_trajec:
-            return [ap-a for ap, a in zip(activations_p[1:], base_acts[1:])]
-        else:
-            return 0.5*np.sum((activations_p[-1]-y)**2) - 0.5*np.sum((base_acts[-1]-y)**2) 
+        return 0.5*np.sum((activations_p[-1]-y)**2) - 0.5*np.sum((base_acts[-1]-y)**2) 
 
 
-    def linearized_perturb(self, base_acts, delta_b, delta_w):
-        """return the linearized perturbation in the entire network,
-        computed by tangent equations"""
-        da = np.zeros(base_acts[0].shape) 
-        das = [da]
-        for a, a_next, w, dw, db in izip(base_acts[:-1], base_acts[1:], self.weights, delta_w, delta_b):
-            sp = sigmoid_prime_a(a_next)
-            da = (np.dot(w,da) + np.dot(dw,a) + db) * sp 
-            das.append(da)
-        return das[1:]
-        
-    
     def update_eta(self, mini_batch, delta_b, delta_w, nabla_b, nabla_w):
         """compute nonlinear measurement eps and update stepsize eta"""
         eps = 0
@@ -239,16 +231,8 @@ class Network(object):
                 z = np.dot(w, activation)+b
                 activation = sigmoid(z)
                 base_acts.append(activation)
-            # compute nonlinear measurement from entire network
-            # fds = self.finite_difference(base_acts, delta_b, delta_w, y)
-            # lds = self.linearized_perturb(base_acts, delta_b, delta_w)
-            # epsn = 0.0
-            # for fd, ld in zip(fds, lds):
-                # epsn += norm(fd-ld) / (norm(ld) + 1e-12) / len(fds)
-            # eps += epsn / len(mini_batch)
-
             # compute nonlinear measurement from only the objective
-            fdJ +=  self.finite_difference(base_acts, delta_b, delta_w, y, entire_trajec = False)
+            fdJ +=  self.finite_difference(base_acts, delta_b, delta_w, y)
         fdJ /= len(mini_batch)
         ldJ = [np.sum(db*nb)+np.sum(dw*nw) for db, dw, nb, nw in zip(delta_b, delta_w, nabla_b, nabla_w)]
         ldJ = np.sum(ldJ)
@@ -262,7 +246,7 @@ class Network(object):
             self.eta = min(self.etas)
         record_file.write('{:f} {:f}\n'.format(self.eta, eps))
         record_file.flush()
-        # return fds, lds, eps, self.eta
+        return fdJ, ldJ, eps, self.eta
 
 
 #### Miscellaneous functions

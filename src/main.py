@@ -25,6 +25,7 @@ import time
 
 
 # DIST all run
+# net_sizes = [50, 50, 50, 50]
 net_sizes = [50, 50, 50, 50]
 data_sizes = [50000, 1, 10000]
 training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
@@ -33,17 +34,18 @@ training_data, validation_data, test_data = data_generator.load_data(net_sizes,d
 # net_sizes = [784, 30, 10]
 # training_data, test_data = mnist_loader.load_data_wrapper(validation = False)
 
-# etas = [None, None, None, None, None, 0.1, 1, 10, 100]
-# epsstars = [0.05, 0.1, 0.3, 0.5, 0.8, None, None, None, None]
-# mbs = [10, 10, 10, 10, 10, 10, 10, 10, 10]
-etas = [None, None, None, None]
-epsstars = [0.1, 0.3, 0.5, 0.8]
-mbs = [50, 50, 50, 50]
+# etas = [None, None, None, None, None,   None, None, None, None, None]
+# epsstars = [0.1, 0.2, 0.3, 0.4, 0.5,    0.6, 0.7, 0.8, 0.9, 1.0]
+# mbs = [10, 10, 10, 10, 10,              10, 10, 10, 10, 10]
+etas = [None, None, None]
+epsstars = [1.0, 0.9, 0.8]
+mbs = [10, 10, 10]
 # etas = [None, None, None, None, None, None, None, None]
 # epsstars = [0.1, 0.3, 0.5, 0.8, 0.1, 0.3, 0.5, 0.8]
 # mbs = [2, 2, 2, 2, 50, 50, 50, 50]
+assert len(etas) == len(epsstars) == len(mbs)
 nruns = 1
-nepoch = 100
+nepoch = 50
 all_hist = []
 
 for eta, epsstar, mb in zip(etas, epsstars, mbs):
@@ -60,9 +62,9 @@ for eta, epsstar, mb in zip(etas, epsstars, mbs):
         except:
             print("Error while deleting record file")
         net = network.Network(net_sizes, generator=False, epsstar=epsstar)
-        _ = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta)
+        j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta)
         # _ = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='MNIST', const_eta=eta)
-        results.append(_)
+        results.append(j)
     results = np.array(results)
     all_hist.append(results.mean(axis=0))
 

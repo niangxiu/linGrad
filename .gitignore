@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+*.p
 
 # Unit test / coverage reports
 htmlcov/
@@ -24,3 +24,4 @@ record.txt
 checkpoint.p
 data.p
 all_history.p
+
