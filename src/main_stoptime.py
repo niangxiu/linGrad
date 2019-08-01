@@ -21,12 +21,12 @@ training_data, validation_data, test_data = data_generator.load_data(net_sizes,d
 # etas = [None, None, None, None,     None, None, None,   0.01, 0.03, 0.1, 0.3,     1, 3, 10, 30,                 100, 300, 1000]
 # epsstars = [0.1, 0.15, 0.2, 0.3,    0.45, 0.67, 1.0,    None, None, None, None,   None, None,  None, None,      None, None,  None]
 # mbs = [10, 10, 10, 10,              10, 10, 10,         10, 10, 10,10,            10, 10, 10, 10,               10, 10, 10]
-etas = [None, None, None, None,     None, None, None]
-epsstars = [0.1, 0.15, 0.2, 0.3,    0.45, 0.67, 1.0]
-mbs = [10, 10, 10, 10,              10, 10, 10]
-# etas =      [None, None, None,  None, None, None,    3, 3, 3,           3, 3, 3]
-# epsstars =  [0.3, 0.3, 0.3,     0.3, 0.3, 0.3,       None, None, None,  None, None, None]
-# mbs =       [1, 2, 5,           10, 20, 50,          1, 2, 5,           10, 20, 50]
+# etas = [None, None, None, None,     None, None, None]
+# epsstars = [0.1, 0.15, 0.2, 0.3,    0.45, 0.67, 1.0]
+# mbs = [10, 10, 10, 10,              10, 10, 10]
+etas =      [None, None, None,  None, None, None, None]
+epsstars =  [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
+mbs =       [1, 2, 5, 10, 20, 50, 100]
 assert len(etas) == len(mbs) == len(epsstars)
 nruns = 1
 nepoch = 50
@@ -46,7 +46,7 @@ for eta, epsstar, mb in zip(etas, epsstars, mbs):
         except:
             print("Error while deleting record file")
         net = network.Network(net_sizes, generator=False, epsstar=epsstar)
-        j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta, target=0.15)
+        j = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='DIST', const_eta=eta, target=0.1)
         # _ = net.SGD(training_data, epochs=nepoch, mini_batch_size=mb, test_data=test_data, case='MNIST', const_eta=eta)
         results.append(j)
     results = np.array(results)
