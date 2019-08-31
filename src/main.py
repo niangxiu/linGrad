@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 from pdb import set_trace
 import time
+from copy import deepcopy
 
 
 def compare_stoptime():
@@ -111,23 +112,35 @@ def simple_DIST():
 
 
 def compare_DIST():
-    net_sizes = [50, 50, 50, 50]
-    data_sizes = [50000, 1, 10000]
-    training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
+    eps_only_obj=False
+    weights_factor = 1.0
+    nruns = 1
+    nepoch = 10
 
-    etas = [None, None, None, None, None,   0.01, 0.03, 0.1, 0.3,     1, 3, 10, 30,                 100, 300]
-    epsstars = [0.2, 0.6, 1.0, 1.4, 1.8,    None, None, None, None,   None, None,  None, None,      None, None]
+    data_sizes = [50000, 1, 10000]
+    net_sizes_data = [50, 50, 50, 50]
+    nlayers = 20
+    net_sizes = [50 for i in range (nlayers)] 
+    # net_sizes_data = [50,40,30,20]
+    # nlayers = 1
+    # net_sizes = [50 for i in range (nlayers)] + [40 for i in range(nlayers)] + [30 for i in range(nlayers)] + [20 for i in range(nlayers)]
+    
+    training_data, validation_data, test_data = data_generator.load_data(net_sizes_data,data_sizes)
+
+    etas = [None, None, None, None, None, None,   0.01, 0.03, 0.1, 0.3,     1, 3, 10, 30,                 100, 300, 1000]
+    epsstars = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0,    None, None, None, None,   None, None,  None, None,      None, None, None]
+    # etas = [None, None, None, None, None, None]
+    # epsstars = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     mbs =           [1, 10, 100,    10, 10]
     obj_factors =   [1, 1, 1,       0.01, 100]
     assert len(etas) == len(epsstars)
     assert all([eta==None or epsstar==None for (eta, epsstar) in zip(etas, epsstars)])
     assert len(mbs) == len(obj_factors)
 
-    nruns = 1
-    nepoch = 50
     all_obj = []
     all_eta_lr = [] # to record etas computed via linear range (linGrad)
 
+    net_base = network.Network(net_sizes, generator=False, weights_factor=weights_factor)
     for obj_factor, mini_batch_size in zip(obj_factors, mbs):
         all_obj.append([])
         all_eta_lr.append([])
@@ -139,13 +152,22 @@ def compare_DIST():
                 time.sleep(1)
                 try: os.remove('record.txt')
                 except: print("Error while deleting record file")
-                net = network.Network(net_sizes, generator=False, epsstar=epsstar)
-                net.obj_factor = obj_factor
                 if epsstar is not None:
-                    net.lingrad(training_data, mini_batch_size)
+                    temp = []
+                    for i in range(10):
+                        net = deepcopy(net_base)
+                        net.epsstar = epsstar
+                        net.obj_factor = obj_factor
+                        net.lingrad(training_data, mini_batch_size, eps_only_obj=eps_only_obj)
+                        temp.append(net.eta)
+                        print(net.eta)
+                    net.eta = np.mean(temp)
                     print(net.eta)
                     eta_lr.append(net.eta)
                 if eta is not None:
+                    net = deepcopy(net_base)
+                    net.epsstar = epsstar
+                    net.obj_factor = obj_factor
                     net.eta = eta
                 net.SGD(training_data, epochs=nepoch, mini_batch_size=mini_batch_size, test_data=test_data, case='DIST')
                 results.append(net.hist[-1])
@@ -160,17 +182,56 @@ def eps_psi0():
     # plot the stepsize given by linGrad starting from different psi0
     psi0s = [10**i for i in range(-10, 11)]
     epsstar = 1.0
-    net_sizes = [50, 50, 50, 50]
+    net_sizes = [50, 50, 50, 50, 50, 50, 50, 50, 40, 40, 40, 40, 40, 40, 40, 40, 30, 30, 30, 30, 30, 30, 30, 30, 20, 20, 20, 20, 20, 20, 20, 20,]
+    # net_sizes = [50, 50, 50, 50]
     data_sizes = [50000, 1, 10000]
     mini_batch_size = 10
     training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
     etas = []
-    for psi in psi0s:
+    for psi0 in psi0s:
         net = network.Network(net_sizes, generator=False, epsstar=epsstar)
+        net.eta=psi0
         net.lingrad(training_data, mini_batch_size)
         etas.append(net.eta)
+        print(net.eta)
     with open("eta_psi0.p", "wb") as f:
         pickle.dump((psi0s, etas), f)
+
+
+def eps_obj():
+    # plot the stepsize given by linGrad using only objective defined nonlinear measurement
+    psi0s = [10**i for i in range(-10, 11)]
+    psi0s = [1e-10,]
+    psi0 = 1.0
+    epsstar = 1.0
+    net_sizes_data = [50, 35, 20]
+    nlayers = 10
+    # net_sizes = [50 for i in range (nlayers)] + [35 for i in range(nlayers)] + [20 for i in range(nlayers)]
+    # net_sizes = [50, 50, 50, 50]
+    net_sizes = [50 for i in range(20)]
+    data_sizes = [50000, 1, 10000]
+    mini_batch_size = 1
+    mbs = [1,10,100]
+    training_data, validation_data, test_data = data_generator.load_data(net_sizes_data,data_sizes)
+    etas=[]
+    etas_obj = []
+    for i in range(50):
+    # for psi0 in psi0s:
+    # for mini_batch_size in mbs:
+        net = network.Network(net_sizes, generator=False, epsstar=epsstar)
+        net.eta=psi0
+        net.lingrad(training_data, mini_batch_size, eps_only_obj=False)
+        etas.append(net.eta)
+        print(net.eta)
+        net = network.Network(net_sizes, generator=False, epsstar=epsstar)
+        net.eta=psi0
+        net.lingrad(training_data, mini_batch_size, eps_only_obj=True)
+        etas_obj.append(net.eta)
+        print('only objective', net.eta)
+    print('avg:', np.mean(etas), 'std:', np.std(etas))
+    print('avg of only obj:', np.mean(etas_obj), 'std of only obj:', np.std(etas_obj))
+    # with open("eta_psi0.p", "wb") as f:
+        # pickle.dump((psi0s, etas), f)
 
 
 if __name__ == '__main__':
@@ -178,6 +239,6 @@ if __name__ == '__main__':
     # compare_hist()
     # compare_stoptime()
     # simple_DIST()
-    # compare_DIST()
-    eps_psi0()
-
+    compare_DIST()
+    # eps_psi0()
+    # eps_obj()

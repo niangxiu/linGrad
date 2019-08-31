@@ -153,7 +153,7 @@ def plot_compare_DIST():
         plt.plot(etas_lr, objs_lr, color='r', linestyle=linestyles[i], marker=markers[i], ms=8)
     plt.xscale('log')
     plt.xlabel('stepsize')
-    plt.ylim(top=0.5)
+    # plt.ylim(top=0.5)
     plt.ylabel('objective after 50 epochs')
     plt.legend(lines, ['$N_s=1$', 
                 '$N_s=10$', 
@@ -186,6 +186,6 @@ def plot_eps_psi0():
 if __name__ == '__main__':
     # plot_hist()
     # plot_stoptime()
-    # plot_compare_DIST()
-    plot_eps_psi0()
+    plot_compare_DIST()
+    # plot_eps_psi0()
 
