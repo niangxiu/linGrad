@@ -98,12 +98,12 @@ def compare_hist():
 def simple_DIST():
     net_sizes = [50, 50, 50, 50]
     data_sizes = [50000, 1, 10000]
-    mini_batch_size = 1
+    mini_batch_size = 10
     epsstar = 0.5
     training_data, validation_data, test_data = data_generator.load_data(net_sizes,data_sizes)
     net = network.Network(net_sizes, generator=False, epsstar=epsstar)
-    net.N1 = 100
-    net.N2 = 300
+    # net.N1 = 100
+    # net.N2 = 300
     # net.obj_factor = 100
     net.lingrad(training_data, mini_batch_size)
     print(net.eta)
@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
     # compare_hist()
     # compare_stoptime()
-    # simple_DIST()
-    compare_DIST()
+    simple_DIST()
+    # compare_DIST()
     # eps_psi0()
     # eps_obj()

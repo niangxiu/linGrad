@@ -238,7 +238,6 @@ class Network(object):
             self.eta = min(self.etas[-self.N2:])
         else:
             self.eta = self.etas[-1]
-            # self.eta = min(self.etas)
         # return fds, lds, eps, self.eta
 
 
@@ -249,8 +248,6 @@ class Network(object):
         for i, mini_batch in enumerate(mini_batches):
             delta_b, delta_w = self.parameter_perturb(mini_batch)
             self.update_eta(mini_batch, delta_b, delta_w, eps_only_obj)
-        self.eta = min(self.etas[-self.N2:])
-        # self.eta = np.mean(self.etas[-self.N2:])
 
 
 #### Miscellaneous functions
